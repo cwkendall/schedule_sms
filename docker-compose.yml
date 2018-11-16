@@ -1,0 +1,30 @@
+version: '3'
+
+services:
+  redis:
+    image: 'redis:3.0-alpine'
+    command: redis-server --requirepass devpassword
+    volumes:
+      - 'redis:/data'
+    ports:
+      - '6379:6379'
+
+  celery:
+    image: batchsms_celery
+    build: .
+    command: pipenv run celery worker -l info -A batchsms.app.celery
+    volumes:
+      - '.:/batchsms'
+      
+  website:
+    image: batchsms_celery
+    command: pipenv run gunicorn -b 0.0.0.0:8000 --access-logfile - "batchsms.app"
+    environment:
+      PYTHONUNBUFFERED: 'true'
+    volumes:
+      - '.:/batchsms'
+    ports:
+      - '8000:8000'
+
+volumes:
+  redis:
